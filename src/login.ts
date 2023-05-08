@@ -2,7 +2,7 @@ import _ from "lodash";
 import Bluebird from "bluebird";
 import inquirer, { QuestionCollection, Question } from "inquirer";
 import zlib from "zlib";
-import AWS from "aws-sdk";
+import { STS, STSClientConfig } from "@aws-sdk/client-sts";
 import cheerio from "cheerio";
 import { v4 } from "uuid";
 import puppeteer, { HTTPRequest } from "puppeteer";
@@ -11,10 +11,11 @@ import _debug from "debug";
 import { CLIError } from "./CLIError";
 import { awsConfig, ProfileConfig } from "./awsConfig";
 import proxy from "proxy-agent";
-import https from "https";
 import { paths } from "./paths";
 import path from "path";
 import mkdirp from "mkdirp";
+import { Agent } from "https";
+import { NodeHttpHandler } from "@aws-sdk/node-http-handler";
 import { AZURE_AD_AUTHENTICATION_ENDPOINTS, AZURE_AD_DEFAULT_AUTHENTICATION_ENDPOINT } from "./azureEndpoints";
 
 const debug = _debug("aws-azure-login");
@@ -825,8 +826,7 @@ export const login = {
                 // An error can be thrown if the page isn't in a good state.
                 // If one occurs, try again after another loop.
                 debug(
-                  `Error when running state "${
-                    state.name
+                  `Error when running state "${state.name
                   }". ${err.toString()}. Retrying...`
                 );
               }
@@ -1034,39 +1034,41 @@ export const login = {
     region: string | undefined
   ): Promise<void> {
     console.log(`Assuming role ${role.roleArn}`);
+    let stsOptions: STSClientConfig = {};
     if (process.env.https_proxy) {
-      AWS.config.update({
-        httpOptions: {
-          agent: proxy(process.env.https_proxy),
-        },
-      });
+      stsOptions = {
+        ...stsOptions,
+        requestHandler: new NodeHttpHandler({
+          httpsAgent: proxy(process.env.https_proxy),
+        }),
+      };
     }
 
     if (awsNoVerifySsl) {
-      AWS.config.update({
-        httpOptions: {
-          agent: new https.Agent({
+      stsOptions = {
+        ...stsOptions,
+        requestHandler: new NodeHttpHandler({
+          httpsAgent: new Agent({
             rejectUnauthorized: false,
           }),
-        },
-      });
+        }),
+      };
     }
 
     if (region) {
-      AWS.config.update({
+      stsOptions = {
+        ...stsOptions,
         region,
-      });
+      };
     }
 
-    const sts = new AWS.STS();
-    const res = await sts
-      .assumeRoleWithSAML({
-        PrincipalArn: role.principalArn,
-        RoleArn: role.roleArn,
-        SAMLAssertion: assertion,
-        DurationSeconds: Math.round(durationHours * 60 * 60),
-      })
-      .promise();
+    const sts = new STS(stsOptions);
+    const res = await sts.assumeRoleWithSAML({
+      PrincipalArn: role.principalArn,
+      RoleArn: role.roleArn,
+      SAMLAssertion: assertion,
+      DurationSeconds: Math.round(durationHours * 60 * 60),
+    });
 
     if (!res.Credentials) {
       debug("Unable to get security credentials from AWS");
@@ -1074,10 +1076,10 @@ export const login = {
     }
 
     await awsConfig.setProfileCredentialsAsync(profileName, {
-      aws_access_key_id: res.Credentials.AccessKeyId,
-      aws_secret_access_key: res.Credentials.SecretAccessKey,
-      aws_session_token: res.Credentials.SessionToken,
-      aws_expiration: res.Credentials.Expiration.toISOString(),
+      aws_access_key_id: res.Credentials.AccessKeyId ?? "",
+      aws_secret_access_key: res.Credentials.SecretAccessKey ?? "",
+      aws_session_token: res.Credentials.SessionToken ?? "",
+      aws_expiration: res.Credentials.Expiration?.toISOString() ?? "",
     });
   },
 };
