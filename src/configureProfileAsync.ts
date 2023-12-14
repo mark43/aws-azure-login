@@ -70,7 +70,7 @@ export async function configureProfileAsync(
     {
       name: "region",
       message: "AWS Region:",
-      default: profile && profile.aws_region,
+      default: profile && profile.region,
     },
     {
       name: "chromeDataByAzureTenant",
