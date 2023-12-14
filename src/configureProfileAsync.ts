@@ -68,6 +68,11 @@ export async function configureProfileAsync(
       },
     },
     {
+      name: "region",
+      message: "AWS Region:",
+      default: profile && profile.aws_region,
+    },
+    {
       name: "chromeDataByAzureTenant",
       message: "Store Chrome user data by Azure AD tenant",
       default:
@@ -92,7 +97,6 @@ export async function configureProfileAsync(
     azure_default_role_arn: answers.defaultRoleArn as string,
     azure_default_duration_hours: answers.defaultDurationHours as string,
     azure_default_remember_me: (answers.rememberMe as string) === "true",
-    chrome_data_by_azure_tenant: (answers.chromeDataByAzureTenant as string) === "true",
   });
 
   console.log("Profile saved.");
