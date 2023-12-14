@@ -15,7 +15,7 @@ import { paths } from "./paths";
 import path from "path";
 import mkdirp from "mkdirp";
 import { Agent } from "https";
-import { NodeHttpHandler } from "@aws-sdk/node-http-handler";
+import { NodeHttpHandler } from "@smithy/node-http-handler";
 import { AZURE_AD_AUTHENTICATION_ENDPOINTS, AZURE_AD_DEFAULT_AUTHENTICATION_ENDPOINT } from "./azureEndpoints";
 
 const debug = _debug("aws-azure-login");
