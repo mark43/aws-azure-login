@@ -33,7 +33,7 @@ interface ProfileCredentials {
   aws_expiration: string;
 }
 
-interface SaveData{
+interface SaveData {
   [key: string]: ProfileConfig | ProfileCredentials;
 }
 
@@ -54,7 +54,7 @@ export const awsConfig = {
       ...config[sectionName],
       ...values,
     };
-    
+
     await this._saveAsync("config", config);
   },
 
@@ -155,7 +155,6 @@ export const awsConfig = {
     });
   },
 
-  
   async _saveAsync(type: string, data: SaveData): Promise<void> {
     if (!paths[type]) throw new Error(`Unknown config type: '${type}'`);
     if (!data) throw new Error(`You must provide data for saving.`);
