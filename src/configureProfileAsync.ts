@@ -97,6 +97,8 @@ export async function configureProfileAsync(
     azure_default_role_arn: answers.defaultRoleArn as string,
     azure_default_duration_hours: answers.defaultDurationHours as string,
     azure_default_remember_me: (answers.rememberMe as string) === "true",
+    region: answers.region as string,
+    chrome_data_by_azure_tenant: (answers.chromeDataByAzureTenant as string) === "true",
   });
 
   console.log("Profile saved.");
